@@ -33,3 +33,9 @@ variable "s3_key_prefix" {
   default     = "cloudtrail"
   description = "S3 key prefix for CloudTrail logs"
 }
+
+variable "enabled_cloudtrail" {
+  type        = bool
+  default     = true
+  description = "If true, deploy the resources for the module."
+}
