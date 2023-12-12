@@ -8,7 +8,6 @@ For capturing events from services like IAM, include_global_service_events must 
 
 ## Usage
 ```hcl
-//Configuration for both email and Google chat webhook
 module cloudtrail {
   source = "github.com/dedicatted/terraform-aws-cloudtrail"
 }
