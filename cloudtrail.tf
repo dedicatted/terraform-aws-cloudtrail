@@ -11,12 +11,6 @@ resource "aws_cloudtrail" "cloudtrail" {
   is_organization_trail         = var.is_organization_trail
   kms_key_id                    = join("", aws_kms_key.cloudtrail[*].arn)
 
-  # kms_key_id                    = "aws/kms"
-  # kms_key_id                    = var.kms_enabled && var.enabled_cloudtrail ? aws_kms_key.cloudtrail[0].arn : null
-  # kms_key_id                    = aws_kms_key.cloudtrail.arn
-  # tags                          = module.labels.tags
-  # sns_topic_name                = var.sns_topic_name
-
   depends_on = [
     aws_s3_bucket_policy.example,
     aws_kms_key.cloudtrail,
@@ -78,7 +72,6 @@ resource "aws_cloudwatch_log_group" "cloudtrail" {
   name              = var.cloudwatch_log_group_name
   retention_in_days = var.log_retention_days
   kms_key_id        = join("", aws_kms_key.cloudtrail[*].arn)
-  # kms_key_id        = var.kms_enabled && var.enabled_cloudtrail ? aws_kms_key.cloudtrail[0].arn : null
 }
 
 data "aws_iam_policy_document" "cloudtrail_assume_role" {
