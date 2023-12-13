@@ -104,7 +104,7 @@ variable "log_retention_days" {
 
 variable "kms_enabled" {
   type        = bool
-  default     = false
+  default     = true
   description = "If true, deploy the resources for kms in the module. Note: Supports in only single cloudtrail management."
 }
 

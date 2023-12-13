@@ -1,7 +1,5 @@
 resource "aws_cloudtrail" "cloudtrail" {
-
-  count = var.enabled_cloudtrail == true ? 1 : 0
-
+  count                         = var.enabled_cloudtrail ? 1 : 0
   name                          = var.cloudtrail_name
   s3_bucket_name                = aws_s3_bucket.example.id
   s3_key_prefix                 = var.s3_key_prefix
@@ -10,91 +8,61 @@ resource "aws_cloudtrail" "cloudtrail" {
   is_multi_region_trail         = var.is_multi_region_trail
   cloud_watch_logs_role_arn     = var.cloud_watch_logs_role_arn
   cloud_watch_logs_group_arn    = var.cloud_watch_logs_group_arn
-  kms_key_id                    = join("", aws_kms_key.cloudtrail[*].arn)
   is_organization_trail         = var.is_organization_trail
+  kms_key_id                    = join("", aws_kms_key.cloudtrail[*].arn)
+
+  # kms_key_id                    = "aws/kms"
+  # kms_key_id                    = var.kms_enabled && var.enabled_cloudtrail ? aws_kms_key.cloudtrail[0].arn : null
+  # kms_key_id                    = aws_kms_key.cloudtrail.arn
   # tags                          = module.labels.tags
   # sns_topic_name                = var.sns_topic_name
 
-
-  depends_on = [aws_s3_bucket_policy.example]
+  depends_on = [
+    aws_s3_bucket_policy.example,
+    aws_kms_key.cloudtrail,
+    aws_kms_alias.cloudtrail,
+  ]
 }
 
+## ==============================================================================================
+# S3 bucket creation and it's policy.
+## ==============================================================================================
+
 resource "aws_s3_bucket" "example" {
-  bucket        = var.s3_bucket_name
+  bucket        = "${var.s3_bucket_name}-${random_string.suffix.result}"
   force_destroy = var.force_destroy
 }
 
 resource "aws_s3_bucket_policy" "example" {
-  bucket = aws_s3_bucket.example.id
-  policy = data.aws_iam_policy_document.example.json
+  bucket = aws_s3_bucket.example.bucket
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Action = ["s3:GetBucketAcl", "s3:ListBucket"],
+        Effect = "Allow",
+        Principal = {
+          Service = "cloudtrail.amazonaws.com",
+        },
+        Resource = [aws_s3_bucket.example.arn],
+      },
+      {
+        Action = "s3:PutObject",
+        Effect = "Allow",
+        Principal = {
+          Service = "cloudtrail.amazonaws.com",
+        },
+        Resource = [format("%s/*", aws_s3_bucket.example.arn)],
+        Condition = {
+          StringEquals = {
+            "s3:x-amz-acl" = "bucket-owner-full-control",
+          },
+        },
+      },
+    ],
+  })
 }
-
-
-
-
-data "aws_iam_policy_document" "example" {
-  statement {
-    sid    = "AWSCloudTrailAclCheck"
-    effect = "Allow"
-
-    principals {
-      type        = "Service"
-      identifiers = ["cloudtrail.amazonaws.com"]
-    }
-
-    actions   = ["s3:GetBucketAcl"]
-    resources = [aws_s3_bucket.example.arn]
-    condition {
-      test     = "StringEquals"
-      variable = "aws:SourceArn"
-      values   = ["arn:${data.aws_partition.current.partition}:cloudtrail:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:trail/example"]
-    }
-  }
-
-  statement {
-    sid    = "AWSCloudTrailWrite"
-    effect = "Allow"
-
-    principals {
-      type        = "Service"
-      identifiers = ["cloudtrail.amazonaws.com"]
-    }
-
-    actions   = ["s3:PutObject"]
-    resources = ["${aws_s3_bucket.example.arn}/prefix/AWSLogs/${data.aws_caller_identity.current.account_id}/*"]
-
-    condition {
-      test     = "StringEquals"
-      variable = "s3:x-amz-acl"
-      values   = ["bucket-owner-full-control"]
-    }
-    condition {
-      test     = "StringEquals"
-      variable = "aws:SourceArn"
-      values   = ["arn:${data.aws_partition.current.partition}:cloudtrail:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:trail/example"]
-    }
-  }
-}
-
-data "aws_caller_identity" "current" {}
-
-data "aws_partition" "current" {}
-
-data "aws_region" "current" {}
-
-
-data "aws_iam_policy_document" "cloudtrail_assume_role" {
-  statement {
-    effect  = "Allow"
-    actions = ["sts:AssumeRole"]
-
-    principals {
-      type        = "Service"
-      identifiers = ["cloudtrail.amazonaws.com"]
-    }
-  }
-}
-
 
 ## ==============================================================================================
 # This role is used by CloudTrail to send logs to CloudWatch.
@@ -110,6 +78,19 @@ resource "aws_cloudwatch_log_group" "cloudtrail" {
   name              = var.cloudwatch_log_group_name
   retention_in_days = var.log_retention_days
   kms_key_id        = join("", aws_kms_key.cloudtrail[*].arn)
+  # kms_key_id        = var.kms_enabled && var.enabled_cloudtrail ? aws_kms_key.cloudtrail[0].arn : null
+}
+
+data "aws_iam_policy_document" "cloudtrail_assume_role" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["cloudtrail.amazonaws.com"]
+    }
+  }
 }
 
 data "aws_iam_policy_document" "cloudtrail_cloudwatch_logs" {
@@ -122,7 +103,6 @@ data "aws_iam_policy_document" "cloudtrail_cloudwatch_logs" {
       "logs:CreateLogStream",
       "logs:PutLogEvents",
     ]
-    #tfsec:ignore:aws-iam-no-policy-wildcards
     resources = ["arn:${data.aws_partition.current.partition}:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:cloudwatch-log-group:*"]
   }
 }
@@ -139,6 +119,7 @@ resource "aws_iam_policy_attachment" "main" {
 }
 
 ## ==============================================================================================
+## Customer managed key. 
 ## Supports only for single account cloudtrail.
 ## ==============================================================================================
 
@@ -148,7 +129,11 @@ resource "aws_kms_key" "cloudtrail" {
   deletion_window_in_days = var.key_deletion_window_in_days
   enable_key_rotation     = "true"
   policy                  = data.aws_iam_policy_document.kms.json
-  tags                    = module.labels.tags
+}
+
+resource "aws_kms_alias" "cloudtrail" {
+  name          = "alias/${var.cloudtrail_name}"
+  target_key_id = aws_kms_key.cloudtrail[0].key_id
 }
 
 data "aws_iam_policy_document" "kms" {
