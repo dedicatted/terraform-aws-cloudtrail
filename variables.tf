@@ -52,20 +52,6 @@ variable "is_multi_region_trail" {
   description = "Specifies whether the trail is created in the current region or in all regions"
 }
 
-variable "cloud_watch_logs_role_arn" {
-  type        = string
-  default     = ""
-  description = "Specifies the role for the CloudWatch Logs endpoint to assume to write to a user’s log group."
-  sensitive   = true
-}
-
-variable "cloud_watch_logs_group_arn" {
-  type        = string
-  default     = ""
-  description = "Specifies a log group name using an Amazon Resource Name (ARN), that represents the log group to which CloudTrail logs will be delivered."
-  sensitive   = true
-}
-
 variable "is_organization_trail" {
   type        = bool
   default     = false
@@ -88,12 +74,6 @@ variable "iam_role_name" {
   type        = string
   default     = "cloudtrail-cloudwatch-logs-role"
   description = "Name for the CloudTrail IAM role"
-}
-
-variable "cloudwatch_log_group_name" {
-  type        = string
-  default     = "cloudtrail-events"
-  description = "The name of the CloudWatch Log Group that receives CloudTrail events."
 }
 
 variable "log_retention_days" {
