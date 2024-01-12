@@ -1,5 +1,5 @@
 # Terraform Module: terraform-aws-cloudtrail
-# This module facilitates the enabling CloudTrail with creation of encrypted S3 bucket for logs.
+This module facilitates the enabling CloudTrail with creation of encrypted S3 bucket for logs.
 
 ## Overview
 The `terraform-aws-cloudtrail` module enables CloudTrail to capture all compatible management events in region.
@@ -13,16 +13,20 @@ module cloudtrail {
 }
 ```
 ### To add AWS Organizations trail
+```
 module cloudtrail {
   source = "github.com/dedicatted/terraform-aws-cloudtrail"
   is_organization_trail = true
 }
+```
 
 ### To add multi region trail
+```
 module cloudtrail {
   source = "github.com/dedicatted/terraform-aws-cloudtrail"
   is_multi_region_trail = true
 }
+```
 
 ## Requirements
 
