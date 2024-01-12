@@ -13,7 +13,7 @@ module cloudtrail {
 }
 ```
 ### To add AWS Organizations trail
-```
+```hcl
 module cloudtrail {
   source = "github.com/dedicatted/terraform-aws-cloudtrail"
   is_organization_trail = true
@@ -21,7 +21,7 @@ module cloudtrail {
 ```
 
 ### To add multi region trail
-```
+```hcl
 module cloudtrail {
   source = "github.com/dedicatted/terraform-aws-cloudtrail"
   is_multi_region_trail = true
