@@ -20,7 +20,7 @@ resource "aws_cloudtrail" "cloudtrail" {
 ## ==============================================================================================
 
 resource "aws_s3_bucket" "cloudtrail" {
-  bucket        = "${var.s3_bucket_name}-${var.cloudtrail_name}"
+  bucket        = "${var.s3_bucket_name}-${var.cloudtrail_name}-${random_string.suffix.result}"
   force_destroy = var.force_destroy
 }
 

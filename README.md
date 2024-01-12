@@ -2,7 +2,7 @@
 # This module facilitates the enabling CloudTrail with creation of encrypted S3 bucket for logs.
 
 ## Overview
-The `terraform-aws-cloudtrail` module enables CloudTrail to capture all compatible management events in region. 
+The `terraform-aws-cloudtrail` module enables CloudTrail to capture all compatible management events in region.
 
 For capturing events from services like IAM, include_global_service_events must be enabled.
 
@@ -12,7 +12,17 @@ module cloudtrail {
   source = "github.com/dedicatted/terraform-aws-cloudtrail"
 }
 ```
+### To add AWS Organizations trail
+module cloudtrail {
+  source = "github.com/dedicatted/terraform-aws-cloudtrail"
+  is_organization_trail = true
+}
 
+### To add multi region trail
+module cloudtrail {
+  source = "github.com/dedicatted/terraform-aws-cloudtrail"
+  is_multi_region_trail = true
+}
 
 ## Requirements
 
